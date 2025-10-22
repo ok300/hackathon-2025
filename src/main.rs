@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::utils::generate_qr_image;
 
+mod create_wiki;
 mod edit_wiki;
 mod utils;
 mod view_wiki;
@@ -40,7 +41,7 @@ pub(crate) enum AuthState {
     },
     Authenticated {
         session: PubkySession,
-        public_storage: PublicStorage,
+        pub_storage: PublicStorage,
         files: Vec<String>,
     },
     Error(String),
@@ -107,7 +108,7 @@ impl PubkyApp {
 
                             *state_clone.lock().unwrap() = AuthState::Authenticated {
                                 session,
-                                public_storage: pubky.public_storage(),
+                                pub_storage: pubky.public_storage(),
                                 files,
                             };
                         }
@@ -197,7 +198,7 @@ impl eframe::App for PubkyApp {
                     }
                     AuthState::Authenticated {
                         ref session,
-                        ref public_storage,
+                        ref pub_storage,
                         ref files,
                     } => {
                         // Check if we need to refresh the files list
@@ -227,6 +228,8 @@ impl eframe::App for PubkyApp {
 
                             self.needs_refresh = false;
                         }
+
+                        let own_pk = session.info().public_key();
 
                         // Show different views based on view_state
                         match self.view_state {
@@ -260,11 +263,10 @@ impl eframe::App for PubkyApp {
                                     }
                                 });
                             }
-                            ViewState::CreateWiki | ViewState::EditWiki => {
-                                edit_wiki::update(self, session, ctx, ui)
-                            }
+                            ViewState::CreateWiki => create_wiki::update(self, session, ctx, ui),
+                            ViewState::EditWiki => edit_wiki::update(self, session, ctx, ui),
                             ViewState::ViewWiki => {
-                                view_wiki::update(self, session, public_storage, ctx, ui)
+                                view_wiki::update(self, own_pk, pub_storage, ctx, ui)
                             }
                         }
                     }

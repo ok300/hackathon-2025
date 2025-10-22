@@ -2,11 +2,11 @@ use crate::{PubkyApp, ViewState};
 
 use eframe::egui::{Context, Ui};
 use egui_commonmark::CommonMarkViewer;
-use pubky::{PubkySession, PublicStorage};
+use pubky::{PublicKey, PublicStorage};
 
 pub(crate) fn update(
     app: &mut PubkyApp,
-    session: &PubkySession,
+    pk: &PublicKey,
     public_storage: &PublicStorage,
     _ctx: &Context,
     ui: &mut Ui,
@@ -92,8 +92,7 @@ pub(crate) fn update(
     ui.add_space(20.0);
 
     // Check if this is the user's own page
-    let own_pk = session.info().public_key().to_string();
-    let is_own_page = app.selected_wiki_user_id == own_pk;
+    let is_own_page = app.selected_wiki_user_id == pk.to_string();
 
     ui.horizontal(|ui| {
         // Show Edit button only for own pages
