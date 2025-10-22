@@ -255,9 +255,10 @@ impl eframe::App for PubkyApp {
                                                 file_url.split('/').last().unwrap_or(file_url);
 
                                             if ui.button(file_name).clicked() {
-                                                let own_pk =
-                                                    session.info().public_key().to_string();
-                                                self.navigate_to_view_wiki_page(&own_pk, file_name);
+                                                self.navigate_to_view_wiki_page(
+                                                    own_pk.to_string().as_str(),
+                                                    file_name,
+                                                );
                                             }
                                         }
                                     }
