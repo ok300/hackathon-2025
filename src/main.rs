@@ -1,9 +1,11 @@
 use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Result};
 use eframe::egui;
 use egui_commonmark::*;
 use pubky::{Capabilities, Pubky, PubkyAuthFlow, PubkySession, PublicStorage};
+use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 use uuid::Uuid;
 
@@ -13,6 +15,14 @@ mod create_wiki;
 mod edit_wiki;
 mod utils;
 mod view_wiki;
+
+#[derive(Serialize, Deserialize)]
+struct WikiPost {
+    content: String,
+    title: String,
+    created_at: u64,
+    cloned_from: String,
+}
 
 const APP_NAME: &str = "Pubky Wiki";
 
@@ -307,10 +317,26 @@ pub(crate) async fn update_wiki_post(
     page_id: &str,
     content: &str,
 ) -> Result<()> {
-    let path = format!("/pub/wiki.app/{}", page_id);
+    // Remove .json extension if it exists in page_id to ensure we add it correctly
+    let page_id_without_ext = page_id.trim_end_matches(".json");
+    let path = format!("/pub/wiki.app/{}.json", page_id_without_ext);
 
-    // Update the post with the provided content
-    session.storage().put(&path, content.to_string()).await?;
+    // Create a WikiPost with the required fields
+    let wiki_post = WikiPost {
+        content: content.to_string(),
+        title: "Title".to_string(),
+        created_at: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+        cloned_from: "user_pk".to_string(),
+    };
+
+    // Serialize the WikiPost to JSON
+    let json_content = serde_json::to_string(&wiki_post)?;
+
+    // Update the post with the JSON content
+    session.storage().put(&path, json_content).await?;
 
     log::info!("Updated post at path: {}", path);
 
