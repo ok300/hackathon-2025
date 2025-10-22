@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use eframe::egui;
+use egui_commonmark::*;
 use pubky::{Capabilities, Pubky, PubkyAuthFlow};
 
 use crate::utils::generate_qr_image;
@@ -34,6 +35,7 @@ enum AuthState {
 struct PubkyApp {
     state: Arc<Mutex<AuthState>>,
     qr_texture: Option<egui::TextureHandle>,
+    cache: CommonMarkCache,
 }
 
 impl PubkyApp {
@@ -75,6 +77,7 @@ impl PubkyApp {
         Self {
             state,
             qr_texture: None,
+            cache: CommonMarkCache::default(),
         }
     }
 }
@@ -153,6 +156,18 @@ impl eframe::App for PubkyApp {
                                         .desired_width(f32::INFINITY)
                                         .font(egui::TextStyle::Monospace),
                                 );
+
+                                egui::ScrollArea::vertical().show(ui, |ui| {
+                                    CommonMarkViewer::new().max_image_width(Some(512)).show(
+                                        ui,
+                                        &mut self.cache,
+                                        r#"
+# Commonmark Viewer Example
+
+A *bunch* ~~of~~ __different__ `text` styles.
+                                        "#,
+                                    );
+                                });
                             });
                     }
                     AuthState::Error(ref error) => {
