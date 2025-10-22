@@ -16,7 +16,7 @@ mod edit_wiki;
 mod utils;
 mod view_wiki;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct WikiPost {
     pub(crate) content: String,
     pub(crate) title: String,
@@ -73,6 +73,7 @@ pub(crate) struct PubkyApp {
     pub(crate) edit_wiki_content: String,
     /// Title for the Edit/Create Wiki view
     pub(crate) edit_wiki_title: String,
+    /// The UUID page ID, without the JSON extension
     pub(crate) selected_wiki_page_id: String,
     pub(crate) selected_wiki_content: String,
     pub(crate) selected_wiki_title: String,
@@ -273,7 +274,7 @@ impl eframe::App for PubkyApp {
                                             if ui.button(file_name).clicked() {
                                                 self.navigate_to_view_wiki_page(
                                                     own_pk.to_string().as_str(),
-                                                    file_name,
+                                                    file_name.trim_end_matches(".json"),
                                                 );
                                             }
                                         }
@@ -307,7 +308,11 @@ async fn initialize_auth() -> Result<(Pubky, PubkyAuthFlow, String)> {
     Ok((pubky, flow, auth_url))
 }
 
-pub(crate) async fn create_wiki_post(session: &PubkySession, title: &str, content: &str) -> Result<String> {
+pub(crate) async fn create_wiki_post(
+    session: &PubkySession,
+    title: &str,
+    content: &str,
+) -> Result<String> {
     let path = format!("/pub/wiki.app/{}.json", Uuid::new_v4());
 
     // Create a WikiPost with the provided title and content

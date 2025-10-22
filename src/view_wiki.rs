@@ -38,30 +38,23 @@ pub(crate) fn update(
                 let path_clone = app.selected_wiki_page_id.clone();
                 let user_id = app.selected_wiki_user_id.clone();
 
-                let path = format!("pubky{user_id}/pub/wiki.app/{path_clone}");
+                let path = format!("pubky{user_id}/pub/wiki.app/{path_clone}.json");
 
                 // Synchronously fetch the content
                 let get_path_fut = public_storage_clone.get(&path);
                 match app.rt.block_on(get_path_fut) {
                     Ok(response) => {
-                        let response_text_fut = response.text();
+                        let response_text_fut = response.json::<WikiPost>();
                         match app.rt.block_on(response_text_fut) {
-                            Ok(text) => {
-                                // Try to parse as WikiPost JSON
-                                match serde_json::from_str::<WikiPost>(&text) {
-                                    Ok(wiki_post) => {
-                                        app.selected_wiki_content = wiki_post.content;
-                                        app.selected_wiki_title = wiki_post.title;
-                                    }
-                                    Err(_) => {
-                                        // If it's not JSON, treat it as plain text (backward compatibility)
-                                        app.selected_wiki_content = text;
-                                        app.selected_wiki_title = "Untitled".to_string();
-                                    }
-                                }
+                            Ok(wiki_post) => {
+                                app.selected_wiki_content = wiki_post.content;
+                                app.selected_wiki_title = wiki_post.title;
                             }
                             Err(e) => {
-                                app.selected_wiki_content = format!("Error reading content: {}", e);
+                                log::error!("Error deserializing WikiPost: {e}");
+
+                                app.selected_wiki_content = "Error deserializing".to_string();
+                                app.selected_wiki_title = "Untitled".to_string();
                             }
                         }
                     }
