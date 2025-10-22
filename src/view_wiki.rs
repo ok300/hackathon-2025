@@ -2,10 +2,11 @@ use crate::{PubkyApp, ViewState};
 
 use eframe::egui::{Context, Ui};
 use egui_commonmark::CommonMarkViewer;
-use pubky::PublicStorage;
+use pubky::{PublicStorage, PubkySession};
 
 pub(crate) fn update(
     app: &mut PubkyApp,
+    session: &PubkySession,
     public_storage: &PublicStorage,
     _ctx: &Context,
     ui: &mut Ui,
@@ -90,10 +91,23 @@ pub(crate) fn update(
 
     ui.add_space(20.0);
 
-    // Go back button
-    if ui.button("Go back").clicked() {
-        app.selected_wiki_page_id.clear();
-        app.selected_wiki_content.clear();
-        app.view_state = ViewState::WikiList;
-    }
+    // Check if this is the user's own page
+    let own_pk = session.info().public_key().to_string();
+    let is_own_page = app.selected_wiki_user_id == format!("://{}", own_pk);
+
+    ui.horizontal(|ui| {
+        // Show Edit button only for own pages
+        if is_own_page && ui.button("Edit").clicked() {
+            // Copy current content to wiki_content for editing
+            app.wiki_content = app.selected_wiki_content.clone();
+            app.view_state = ViewState::EditWiki;
+        }
+
+        // Go back button
+        if ui.button("Go back").clicked() {
+            app.selected_wiki_page_id.clear();
+            app.selected_wiki_content.clear();
+            app.view_state = ViewState::WikiList;
+        }
+    });
 }

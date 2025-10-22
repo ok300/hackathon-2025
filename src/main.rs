@@ -51,6 +51,7 @@ pub(crate) enum ViewState {
     WikiList,
     CreateWiki,
     ViewWiki,
+    EditWiki,
 }
 
 pub(crate) struct PubkyApp {
@@ -253,7 +254,8 @@ impl eframe::App for PubkyApp {
                                 });
                             }
                             ViewState::CreateWiki => edit_wiki::update(self, session, ctx, ui),
-                            ViewState::ViewWiki => view_wiki::update(self, public_storage, ctx, ui),
+                            ViewState::EditWiki => edit_wiki::update(self, session, ctx, ui),
+                            ViewState::ViewWiki => view_wiki::update(self, session, public_storage, ctx, ui),
                         }
                     }
                     AuthState::Error(ref error) => {
@@ -285,4 +287,30 @@ pub(crate) async fn create_wiki_post(session: &PubkySession, content: &str) -> R
     log::info!("Created post at path: {}", path);
 
     Ok(path)
+}
+
+pub(crate) async fn update_wiki_post(
+    session: &PubkySession,
+    page_id: &str,
+    content: &str,
+) -> Result<()> {
+    let path = format!("/pub/wiki.app/{}", page_id);
+
+    // Update the post with the provided content
+    session.storage().put(&path, content.to_string()).await?;
+
+    log::info!("Updated post at path: {}", path);
+
+    Ok(())
+}
+
+pub(crate) async fn delete_wiki_post(session: &PubkySession, page_id: &str) -> Result<()> {
+    let path = format!("/pub/wiki.app/{}", page_id);
+
+    // Delete the post
+    session.storage().delete(&path).await?;
+
+    log::info!("Deleted post at path: {}", path);
+
+    Ok(())
 }
