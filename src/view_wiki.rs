@@ -1,4 +1,4 @@
-use crate::{PubkyApp, ViewState};
+use crate::{PubkyApp, ViewState, WikiPost};
 
 use eframe::egui::{Context, Ui};
 use egui_commonmark::CommonMarkViewer;
@@ -13,6 +13,12 @@ pub(crate) fn update(
 ) {
     ui.label("View Wiki Post");
     ui.add_space(20.0);
+
+    // Display title if available
+    if !app.selected_wiki_title.is_empty() {
+        ui.heading(&app.selected_wiki_title);
+        ui.add_space(10.0);
+    }
 
     ui.label(format!("User ID: {}", &app.selected_wiki_user_id));
     ui.add_space(10.0);
@@ -41,7 +47,18 @@ pub(crate) fn update(
                         let response_text_fut = response.text();
                         match app.rt.block_on(response_text_fut) {
                             Ok(text) => {
-                                app.selected_wiki_content = text;
+                                // Try to parse as WikiPost JSON
+                                match serde_json::from_str::<WikiPost>(&text) {
+                                    Ok(wiki_post) => {
+                                        app.selected_wiki_content = wiki_post.content;
+                                        app.selected_wiki_title = wiki_post.title;
+                                    }
+                                    Err(_) => {
+                                        // If it's not JSON, treat it as plain text (backward compatibility)
+                                        app.selected_wiki_content = text;
+                                        app.selected_wiki_title = "Untitled".to_string();
+                                    }
+                                }
                             }
                             Err(e) => {
                                 app.selected_wiki_content = format!("Error reading content: {}", e);
@@ -104,6 +121,7 @@ pub(crate) fn update(
         if ui.button("Go back").clicked() {
             app.selected_wiki_page_id.clear();
             app.selected_wiki_content.clear();
+            app.selected_wiki_title.clear();
             app.view_state = ViewState::WikiList;
         }
     });

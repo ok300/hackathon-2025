@@ -17,11 +17,11 @@ mod utils;
 mod view_wiki;
 
 #[derive(Serialize, Deserialize)]
-struct WikiPost {
-    content: String,
-    title: String,
-    created_at: u64,
-    cloned_from: String,
+pub(crate) struct WikiPost {
+    pub(crate) content: String,
+    pub(crate) title: String,
+    pub(crate) created_at: u64,
+    pub(crate) cloned_from: String,
 }
 
 const APP_NAME: &str = "Pubky Wiki";
@@ -71,8 +71,11 @@ pub(crate) struct PubkyApp {
     pub(crate) view_state: ViewState,
     /// Content for the Edit Wiki view
     pub(crate) edit_wiki_content: String,
+    /// Title for the Edit/Create Wiki view
+    pub(crate) edit_wiki_title: String,
     pub(crate) selected_wiki_page_id: String,
     pub(crate) selected_wiki_content: String,
+    pub(crate) selected_wiki_title: String,
     pub(crate) selected_wiki_user_id: String,
     pub(crate) needs_refresh: bool,
     cache: CommonMarkCache,
@@ -140,8 +143,10 @@ impl PubkyApp {
             qr_texture: None,
             view_state: ViewState::WikiList,
             edit_wiki_content: String::new(),
+            edit_wiki_title: String::new(),
             selected_wiki_page_id: String::new(),
             selected_wiki_content: String::new(),
+            selected_wiki_title: String::new(),
             selected_wiki_user_id: String::new(),
             needs_refresh: false,
             cache: CommonMarkCache::default(),
@@ -159,6 +164,7 @@ impl PubkyApp {
 
     fn navigate_to_edit_selected_wiki_page(&mut self) {
         self.edit_wiki_content = self.selected_wiki_content.clone();
+        self.edit_wiki_title = self.selected_wiki_title.clone();
         self.view_state = ViewState::EditWiki;
     }
 }
@@ -301,11 +307,25 @@ async fn initialize_auth() -> Result<(Pubky, PubkyAuthFlow, String)> {
     Ok((pubky, flow, auth_url))
 }
 
-pub(crate) async fn create_wiki_post(session: &PubkySession, content: &str) -> Result<String> {
-    let path = format!("/pub/wiki.app/{}", Uuid::new_v4());
+pub(crate) async fn create_wiki_post(session: &PubkySession, title: &str, content: &str) -> Result<String> {
+    let path = format!("/pub/wiki.app/{}.json", Uuid::new_v4());
 
-    // Create the post with the provided content
-    session.storage().put(&path, content.to_string()).await?;
+    // Create a WikiPost with the provided title and content
+    let wiki_post = WikiPost {
+        content: content.to_string(),
+        title: title.to_string(),
+        created_at: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+        cloned_from: "user_pk".to_string(),
+    };
+
+    // Serialize the WikiPost to JSON
+    let json_content = serde_json::to_string(&wiki_post)?;
+
+    // Create the post with the JSON content
+    session.storage().put(&path, json_content).await?;
 
     log::info!("Created post at path: {}", path);
 
@@ -315,6 +335,7 @@ pub(crate) async fn create_wiki_post(session: &PubkySession, content: &str) -> R
 pub(crate) async fn update_wiki_post(
     session: &PubkySession,
     page_id: &str,
+    title: &str,
     content: &str,
 ) -> Result<()> {
     // Remove .json extension if it exists in page_id to ensure we add it correctly
@@ -324,7 +345,7 @@ pub(crate) async fn update_wiki_post(
     // Create a WikiPost with the required fields
     let wiki_post = WikiPost {
         content: content.to_string(),
-        title: "Title".to_string(),
+        title: title.to_string(),
         created_at: SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
