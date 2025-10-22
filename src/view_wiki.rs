@@ -2,7 +2,7 @@ use crate::{PubkyApp, ViewState};
 
 use eframe::egui::{Context, Ui};
 use egui_commonmark::CommonMarkViewer;
-use pubky::{PublicStorage, PubkySession};
+use pubky::{PubkySession, PublicStorage};
 
 pub(crate) fn update(
     app: &mut PubkyApp,
@@ -82,7 +82,7 @@ pub(crate) fn update(
             for url in clicked_urls {
                 let mut parts = url.split('/'); // Split on the '/' character
                 if let (Some(user_pk), Some(page_id)) = (parts.next(), parts.next()) {
-                    app.navigate_to_wiki_page(user_pk, page_id);
+                    app.navigate_to_view_wiki_page(user_pk, page_id);
                 } else {
                     log::warn!("Invalid Pubky Wiki link: {url}");
                 };
@@ -93,14 +93,12 @@ pub(crate) fn update(
 
     // Check if this is the user's own page
     let own_pk = session.info().public_key().to_string();
-    let is_own_page = app.selected_wiki_user_id == format!("://{}", own_pk);
+    let is_own_page = app.selected_wiki_user_id == own_pk;
 
     ui.horizontal(|ui| {
         // Show Edit button only for own pages
         if is_own_page && ui.button("Edit").clicked() {
-            // Copy current content to wiki_content for editing
-            app.wiki_content = app.selected_wiki_content.clone();
-            app.view_state = ViewState::EditWiki;
+            app.navigate_to_edit_selected_wiki_page();
         }
 
         // Go back button

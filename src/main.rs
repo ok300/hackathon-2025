@@ -58,7 +58,8 @@ pub(crate) struct PubkyApp {
     pub(crate) state: Arc<Mutex<AuthState>>,
     qr_texture: Option<egui::TextureHandle>,
     pub(crate) view_state: ViewState,
-    pub(crate) wiki_content: String,
+    /// Content for the Edit Wiki view
+    pub(crate) edit_wiki_content: String,
     pub(crate) selected_wiki_page_id: String,
     pub(crate) selected_wiki_content: String,
     pub(crate) selected_wiki_user_id: String,
@@ -127,7 +128,7 @@ impl PubkyApp {
             state,
             qr_texture: None,
             view_state: ViewState::WikiList,
-            wiki_content: String::new(),
+            edit_wiki_content: String::new(),
             selected_wiki_page_id: String::new(),
             selected_wiki_content: String::new(),
             selected_wiki_user_id: String::new(),
@@ -137,11 +138,17 @@ impl PubkyApp {
         }
     }
 
-    fn navigate_to_wiki_page(&mut self, user_pk: &str, page_id: &str) {
+    fn navigate_to_view_wiki_page(&mut self, user_pk: &str, page_id: &str) {
         self.selected_wiki_user_id = user_pk.to_string();
         self.selected_wiki_page_id = page_id.to_string();
-        self.selected_wiki_content = String::new();
+        self.selected_wiki_content.clear();
+
         self.view_state = ViewState::ViewWiki;
+    }
+
+    fn navigate_to_edit_selected_wiki_page(&mut self) {
+        self.edit_wiki_content = self.selected_wiki_content.clone();
+        self.view_state = ViewState::EditWiki;
     }
 }
 
@@ -247,15 +254,18 @@ impl eframe::App for PubkyApp {
                                             if ui.button(file_name).clicked() {
                                                 let own_pk =
                                                     session.info().public_key().to_string();
-                                                self.navigate_to_wiki_page(&own_pk, file_name);
+                                                self.navigate_to_view_wiki_page(&own_pk, file_name);
                                             }
                                         }
                                     }
                                 });
                             }
-                            ViewState::CreateWiki => edit_wiki::update(self, session, ctx, ui),
-                            ViewState::EditWiki => edit_wiki::update(self, session, ctx, ui),
-                            ViewState::ViewWiki => view_wiki::update(self, session, public_storage, ctx, ui),
+                            ViewState::CreateWiki | ViewState::EditWiki => {
+                                edit_wiki::update(self, session, ctx, ui)
+                            }
+                            ViewState::ViewWiki => {
+                                view_wiki::update(self, session, public_storage, ctx, ui)
+                            }
                         }
                     }
                     AuthState::Error(ref error) => {
