@@ -29,7 +29,9 @@ pub(crate) fn update(
     }
 
     if share_button.clicked() {
-        ctx.copy_text(app.selected_wiki_page_id.clone());
+        let user_id = &app.selected_wiki_user_id;
+        let page_id = &app.selected_wiki_page_id;
+        ctx.copy_text(format!("[link]({user_id}/{page_id})"));
         app.show_copy_tooltip = true;
     }
 
