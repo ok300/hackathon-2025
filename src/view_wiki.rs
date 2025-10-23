@@ -59,22 +59,14 @@ pub(crate) fn update(
 
                 // Synchronously fetch the content
                 let get_path_fut = public_storage_clone.get(&path);
-                match app.rt.block_on(get_path_fut) {
-                    Ok(response) => {
-                        let response_text_fut = response.text();
-                        match app.rt.block_on(response_text_fut) {
-                            Ok(text) => {
-                                app.selected_wiki_content = text;
-                            }
-                            Err(e) => {
-                                app.selected_wiki_content = format!("Error reading content: {}", e);
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        app.selected_wiki_content = format!("Error fetching path {path}: {}", e);
-                    }
-                }
+                let fetched_content = match app.rt.block_on(get_path_fut) {
+                    Ok(response) => match app.rt.block_on(response.text()) {
+                        Ok(text) => text,
+                        Err(e) => format!("Error reading content: {e}"),
+                    },
+                    Err(e) => format!("Error fetching path {path}: {e}"),
+                };
+                app.selected_wiki_content = fetched_content;
             }
 
             egui::ScrollArea::vertical().show(ui, |ui| {
