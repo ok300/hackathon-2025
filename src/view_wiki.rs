@@ -115,8 +115,8 @@ pub(crate) fn update(
             app.navigate_to_edit_selected_wiki_page();
         }
 
-        // Fork button - available for all pages
-        if ui.button("Fork page").clicked() {
+        // Fork button - available for only when viewing other user's pages
+        if !is_own_page && ui.button("Fork page").clicked() {
             app.edit_wiki_content = app.selected_wiki_content.clone();
             app.forked_from_page_id = Some(app.selected_wiki_page_id.clone());
             app.view_state = ViewState::CreateWiki;
