@@ -27,15 +27,55 @@ pub(crate) fn update(
         ui.add_space(5.0);
         for fork_link in fork_links {
             if let Some((user_pk, page_id)) = extract_details_wiki_url(&fork_link) {
-                let mut btn_label = format!("Fork: {user_pk}");
+                let is_current_article = &app.selected_wiki_user_id == &user_pk 
+                    && &app.selected_wiki_page_id == &page_id;
 
-                if &app.selected_wiki_user_id == &user_pk {
-                    btn_label = format!("{btn_label} (current)");
-                }
-
-                if ui.button(btn_label).clicked() {
-                    app.navigate_to_view_wiki_page(&user_pk, &page_id, session, pub_storage);
-                }
+                ui.horizontal(|ui| {
+                    // Truncate user_pk for display
+                    let display_pk = if user_pk.len() > 20 {
+                        format!("{}...", &user_pk[..20])
+                    } else {
+                        user_pk.clone()
+                    };
+                    
+                    let btn_text = if is_current_article {
+                        format!("📄 {} (current)", display_pk)
+                    } else {
+                        format!("📄 {}", display_pk)
+                    };
+                    
+                    let view_button = ui.add_sized(
+                        [300.0, 30.0],
+                        egui::Button::new(egui::RichText::new(btn_text).size(14.0))
+                    );
+                    
+                    if view_button.clicked() {
+                        app.navigate_to_view_wiki_page(&user_pk, &page_id, session, pub_storage);
+                    }
+                    
+                    // Compare button - don't show for the exact same article we're viewing
+                    if !is_current_article {
+                        ui.add_space(5.0);
+                        let compare_button = ui.add_sized(
+                            [100.0, 30.0],
+                            egui::Button::new(egui::RichText::new("🔍 Compare").size(14.0))
+                        );
+                        
+                        if compare_button.clicked() {
+                            // Set up comparison: current article vs this fork
+                            app.selected_for_compare = vec![
+                                (app.selected_wiki_user_id.clone(), app.selected_wiki_page_id.clone()),
+                                (user_pk.clone(), page_id.clone()),
+                            ];
+                            app.comparison_title_1 = app.selected_wiki_page_id.clone();
+                            app.comparison_title_2 = page_id.clone();
+                            app.comparison_content_1 = app.selected_wiki_content.clone();
+                            app.comparison_content_2 = String::new(); // Will be loaded in compare view
+                            app.view_state = ViewState::CompareWiki;
+                        }
+                    }
+                });
+                ui.add_space(5.0);
             }
         }
     });
