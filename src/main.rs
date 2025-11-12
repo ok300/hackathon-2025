@@ -41,7 +41,7 @@ fn main() -> Result<()> {
 }
 
 fn load_icon() -> Result<egui::IconData> {
-    let icon_path = "assets/logo.png";
+    let icon_path = "../assets/logo.png";
     let image = image::open(icon_path)
         .map_err(|e| anyhow!("Failed to load icon: {e}"))?
         .into_rgba8();
@@ -57,7 +57,7 @@ fn load_icon() -> Result<egui::IconData> {
 }
 
 fn load_logo_image() -> Option<egui::ColorImage> {
-    let logo_path = "assets/logo.png";
+    let logo_path = "../assets/logo.png";
     let image = image::open(logo_path).ok()?.into_rgba8();
     let size = [image.width() as usize, image.height() as usize];
     let pixels = image.into_raw();
@@ -306,7 +306,10 @@ impl eframe::App for PubkyApp {
                         ui.label(egui::RichText::new("Initializing authentication...").size(16.0));
                     }
                     AuthState::ShowingQR { ref auth_url } => {
-                        ui.label(egui::RichText::new("Scan this QR code with your Pubky app to login:").size(16.0));
+                        ui.label(
+                            egui::RichText::new("Scan this QR code with your Pubky app to login:")
+                                .size(16.0),
+                        );
                         ui.add_space(25.0);
 
                         // Generate and display QR code
@@ -358,7 +361,9 @@ impl eframe::App for PubkyApp {
                                 ui.add_space(10.0);
                                 let create_button = ui.add_sized(
                                     [200.0, 40.0],
-                                    egui::Button::new(egui::RichText::new("✨ Create New Wiki Page").size(16.0))
+                                    egui::Button::new(
+                                        egui::RichText::new("✨ Create New Wiki Page").size(16.0),
+                                    ),
                                 );
                                 if create_button.clicked() {
                                     self.view_state = ViewState::CreateWiki;
@@ -372,7 +377,13 @@ impl eframe::App for PubkyApp {
                                 egui::ScrollArea::vertical().show(ui, |ui| {
                                     if file_cache.is_empty() {
                                         ui.add_space(10.0);
-                                        ui.label(egui::RichText::new("No wiki posts yet. Create your first one!").italics().color(egui::Color32::GRAY));
+                                        ui.label(
+                                            egui::RichText::new(
+                                                "No wiki posts yet. Create your first one!",
+                                            )
+                                            .italics()
+                                            .color(egui::Color32::GRAY),
+                                        );
                                     } else {
                                         let pk = own_pk.to_string();
                                         for (file_url, file_title) in file_cache {
@@ -381,7 +392,12 @@ impl eframe::App for PubkyApp {
                                                 file_url.split('/').last().unwrap_or(file_url);
 
                                             ui.horizontal(|ui| {
-                                                if ui.button(egui::RichText::new(file_name).monospace()).clicked() {
+                                                if ui
+                                                    .button(
+                                                        egui::RichText::new(file_name).monospace(),
+                                                    )
+                                                    .clicked()
+                                                {
                                                     self.navigate_to_view_wiki_page(
                                                         &pk,
                                                         file_name,
