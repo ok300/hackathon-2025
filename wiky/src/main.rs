@@ -41,8 +41,9 @@ fn main() -> Result<()> {
 }
 
 fn load_icon() -> Result<egui::IconData> {
-    let icon_path = "assets/logo.png";
-    let image = image::open(icon_path)
+    // Embed the icon at compile time to avoid runtime file I/O
+    let icon_bytes = include_bytes!("../assets/logo.png");
+    let image = image::load_from_memory(icon_bytes)
         .map_err(|e| anyhow!("Failed to load icon: {e}"))?
         .into_rgba8();
 
@@ -57,8 +58,9 @@ fn load_icon() -> Result<egui::IconData> {
 }
 
 fn load_logo_image() -> Option<egui::ColorImage> {
-    let logo_path = "assets/logo.png";
-    let image = image::open(logo_path).ok()?.into_rgba8();
+    // Embed the logo at compile time to avoid runtime file I/O
+    let logo_bytes = include_bytes!("../assets/logo.png");
+    let image = image::load_from_memory(logo_bytes).ok()?.into_rgba8();
     let size = [image.width() as usize, image.height() as usize];
     let pixels = image.into_raw();
 
